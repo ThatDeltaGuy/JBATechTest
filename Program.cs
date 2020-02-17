@@ -37,7 +37,8 @@ namespace JBATechTest
                 }
                 else//For Debugging
                 {
-                    path = "C:\\Users\\Alexander Lund\\source\repos\\JBATechTest\\DataFiles\\cru-ts-2-10.1991-2000-cutdown.pre";
+                    path = "C:\\Users\\Alexander Lund\\source\\repos\\JBATechTest\\DataFiles\\cru-ts-2-10.1991-2000-cutdown.pre";
+                    fileExists = true;
                 }
             }
 
@@ -51,6 +52,13 @@ namespace JBATechTest
         /// <returns></returns>
         private static string ReadInFile(string path)
         {
+
+            string[] lines = File.ReadAllLines(path);
+            foreach (string line in lines)
+            {
+                // Use a tab to indent each line of the file.
+                Console.WriteLine("\t" + line);
+            }
 
             return "";
         }
