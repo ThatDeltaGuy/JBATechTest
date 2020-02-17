@@ -19,17 +19,18 @@ namespace JBATechTest
             var path = GetFilePath();
             var rainData = ReadInFile(path);
             var result = AddRainDataToDB(rainData);
+            Console.WriteLine(result);
         }
         /// <summary>
         /// Returns file path from user
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Returns a File Path</returns>
         private static string GetFilePath()
         {
             var fileExists = false;
             var path = string.Empty;
             while (!fileExists) {
-                Console.WriteLine("Please enter Full Path:");
+                Console.WriteLine("Please enter Full Path (or hit enter for Demo):");
                 path = Console.ReadLine();
                 if (path != "")
                 {
@@ -43,7 +44,7 @@ namespace JBATechTest
                 }
                 else//For Debugging
                 {
-                    path = "F:\\Repos\\JBATechTest\\DataFiles\\cru-ts-2-10.1991-2000-cutdown.pre";
+                    path = "..\\..\\..\\DataFiles\\cru-ts-2-10.1991-2000-cutdown.pre";
                     fileExists = true;
                 }
             }
@@ -52,35 +53,33 @@ namespace JBATechTest
         }
 
         /// <summary>
-        /// Reads in File and returns a list of rainData Objects
+        /// Gets list of RainData from File
         /// </summary>
         /// <param name="path"></param>
-        /// <returns></returns>
+        /// <returns>returns a list of rainData Objects</returns>
         private static List<RainData> ReadInFile(string path)
         {
-
             string[] lines = File.ReadAllLines(path);
             List<RainData> rainDataList = new List<RainData>();
 
             var yearStart = 0;
             var numOfYears = 0;
             var headerIndex = -1;
-            //reads in header data, assumes header ends at fists grid-ref
+            //reads in header data, assumes header ends at first grid-ref
             foreach (var line in lines.Select((value, i) => (value, i)))
             {
                 int j = -1;
                 
-                if (yearStart == 0&& (j = line.value.IndexOf("Years=")) != -1)
+                if (yearStart == 0&& (j = line.value.IndexOf("Years=")) != -1)//retrieves years from header data
                 {
                     yearStart = int.Parse(line.value.Substring(j + 6, 4));
                     numOfYears = int.Parse(line.value.Substring(j + 11, 4))- yearStart+1;
                 }
-                else if(line.value.IndexOf("Grid-ref") != -1)
+                else if(line.value.IndexOf("Grid-ref") != -1)//finds end of header data
                 {
                     headerIndex = line.i;
                     break;
                 }
-                //Console.WriteLine("\t" + line.value);
             }
 
             //splits data into grid chunks
@@ -129,29 +128,16 @@ namespace JBATechTest
         /// Adds a List of RainData items to the DB
         /// </summary>
         /// <param name="rainDataList"></param>
-        /// <returns></returns>
+        /// <returns>Returns a Success message or Fail info</returns>
         private static string AddRainDataToDB(List<RainData> rainDataList)
         {
             var result = string.Empty;
 
-            //foreach (var item in rainDataList)
-            //{
-            //    var success = AddRainDataToDB(item);
-            //    result = "Xref:" + item.XRef + "Yref:" + item.YRef + "Date:" + item.Date.ToString() + "Value:" + item.Value;
-            //    if (success)
-            //    {
-            //        Console.WriteLine("Written to DB: " + result);
-            //    }
-            //    else
-            //    {
-            //        result = "failed on: "+ result;
-            //        return result;
-            //    }
-            //}
-
             Parallel.ForEach(rainDataList, new ParallelOptions { MaxDegreeOfParallelism = 8 },(item,state) => {
+                //adds data tp db
                 var success = AddRainDataToDB(item);
-                result = "Xref:" + item.XRef + "Yref:" + item.YRef + "Date:" + item.Date.ToString() + "Value:" + item.Value;
+                result = "Xref:" + item.XRef + ", Yref:" + item.YRef + ", Date:" + item.Date.ToString() + ", Value:" + item.Value;
+                //Gives output for user
                 if (success)
                 {
                     Console.WriteLine("Written to DB: " + result);
@@ -168,7 +154,7 @@ namespace JBATechTest
         /// Adds a single item of RainData to the DB
         /// </summary>
         /// <param name="rainData"></param>
-        /// <returns></returns>
+        /// <returns>Returns a Bool on Success or Fail</returns>
         private static bool AddRainDataToDB(RainData rainData)
         {
             var result = true;
