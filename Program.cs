@@ -18,6 +18,7 @@ namespace JBATechTest
         {
             var path = GetFilePath();
             var rainData = ReadInFile(path);
+            var result = AddRainDataToDB(rainData);
         }
         /// <summary>
         /// Returns file path from user
@@ -42,7 +43,7 @@ namespace JBATechTest
                 }
                 else//For Debugging
                 {
-                    path = "C:\\Users\\Alexander Lund\\source\\repos\\JBATechTest\\DataFiles\\cru-ts-2-10.1991-2000-cutdown.pre";
+                    path = "F:\\Repos\\JBATechTest\\DataFiles\\cru-ts-2-10.1991-2000-cutdown.pre";
                     fileExists = true;
                 }
             }
@@ -79,7 +80,7 @@ namespace JBATechTest
                     headerIndex = line.i;
                     break;
                 }
-                Console.WriteLine("\t" + line.value);
+                //Console.WriteLine("\t" + line.value);
             }
 
             //splits data into grid chunks
@@ -94,7 +95,7 @@ namespace JBATechTest
 
             //reads through data concurrently and turns each month into rainData objects
             var bag = new ConcurrentBag<RainData>();
-            Parallel.ForEach(data, item =>
+            Parallel.ForEach(data, new ParallelOptions { MaxDegreeOfParallelism = 8 },item =>
              {
                  var grid = item.Split('|')[0].Substring(11).Split(',');
                  var xref = int.Parse(grid[0]);
@@ -119,8 +120,72 @@ namespace JBATechTest
              });
 
             //orders data and returns a list of raindata objects
-            rainDataList = bag.OrderBy(d=>d.Date).ToList();
+            rainDataList = bag.OrderBy(d => d.Date).ToList();
             return rainDataList;
+        }
+
+
+        /// <summary>
+        /// Adds a List of RainData items to the DB
+        /// </summary>
+        /// <param name="rainDataList"></param>
+        /// <returns></returns>
+        private static string AddRainDataToDB(List<RainData> rainDataList)
+        {
+            var result = string.Empty;
+
+            //foreach (var item in rainDataList)
+            //{
+            //    var success = AddRainDataToDB(item);
+            //    result = "Xref:" + item.XRef + "Yref:" + item.YRef + "Date:" + item.Date.ToString() + "Value:" + item.Value;
+            //    if (success)
+            //    {
+            //        Console.WriteLine("Written to DB: " + result);
+            //    }
+            //    else
+            //    {
+            //        result = "failed on: "+ result;
+            //        return result;
+            //    }
+            //}
+
+            Parallel.ForEach(rainDataList, new ParallelOptions { MaxDegreeOfParallelism = 8 },(item,state) => {
+                var success = AddRainDataToDB(item);
+                result = "Xref:" + item.XRef + "Yref:" + item.YRef + "Date:" + item.Date.ToString() + "Value:" + item.Value;
+                if (success)
+                {
+                    Console.WriteLine("Written to DB: " + result);
+                }
+                else
+                {
+                    result = "failed on: " + result;
+                    state.Break();
+                }
+            });
+            return "Success";
+        }
+        /// <summary>
+        /// Adds a single item of RainData to the DB
+        /// </summary>
+        /// <param name="rainData"></param>
+        /// <returns></returns>
+        private static bool AddRainDataToDB(RainData rainData)
+        {
+            var result = true;
+
+            using (var db = new AppDBContext())
+            {
+                try
+                {
+                    db.Add(rainData);
+                    db.SaveChanges();
+                }
+                catch(Exception ex)
+                {
+                    result = false;
+                }
+            }
+            return result;
         }
     }
 }
