@@ -17,7 +17,7 @@ namespace JBATechTest
         static void Main(string[] args)
         {
             var path = GetFilePath();
-            var Filestring = ReadInFile(path);
+            var rainData = ReadInFile(path);
         }
         /// <summary>
         /// Returns file path from user
@@ -51,7 +51,7 @@ namespace JBATechTest
         }
 
         /// <summary>
-        /// Reads in File 
+        /// Reads in File and returns a list of rainData Objects
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
